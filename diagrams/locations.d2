@@ -1,0 +1,130 @@
+direction: down
+
+classes: {
+  box: {shape: sql_table}
+  plane: {style: {fill: "#f5f7fa"; stroke: "#7c8796"; stroke-dash: 5; font-size: 20}}
+  flow: {style: {stroke: "#315e9d"; font-color: "#244d84"; font-size: 18}}
+  heavy: {style: {stroke: "#aa6b0d"; font-color: "#8f5700"; font-size: 18}}
+}
+
+browser: "Browser — user's device" {
+  class: plane
+  style: {fill: "#f2f0f8"; stroke: "#776592"}
+  ui: "Run controls + refresh" {
+    class: box
+    type: React client components
+    does: "selects light/heavy; POSTs input; refreshes page"
+    file: frontend/app/dev/noop/NoopRunner.tsx
+    poll: "frontend/app/plants/[sampleId]/AutoRefresh.tsx"
+  }
+  login: Password sign-in {
+    class: box
+    type: React client component
+    does: signInWithPassword → user session
+    file: frontend/app/login/page.tsx
+  }
+}
+
+vercel: "Vercel — Next.js server" {
+  class: plane
+  style: {fill: "#eaf1f8"; stroke: "#3d6aa6"}
+  api: Run API + dispatch {
+    class: box
+    does: "authenticate → resolve org → create job → mint → dispatch"
+    light: frontend/app/api/noop/run/route.ts
+    heavy: frontend/app/api/noop-baked/run/route.ts
+    shared: frontend/lib/devJob.ts
+    org: frontend/lib/org.ts
+    dispatch: frontend/lib/github.ts
+    holds: GITHUB_DISPATCH_TOKEN on the server
+  }
+  results: Server-rendered results {
+    class: box
+    does: "reads latest visible noop job + artifact; renders card"
+    file: frontend/app/dev/noop/page.tsx
+    cards: frontend/app/plants/results/modules/
+    client: frontend/lib/supabase/server.ts
+  }
+}
+
+github: GitHub Actions runners {
+  class: plane
+  light: Light runner {
+    class: box
+    does: "claim → compute locally → insert result → finish"
+    file: .github/workflows/noop.yml
+    science: components/noop/science/noop.py
+    writer: components/_shared/post_artifact.py
+    uses: "Supabase anon key + callback token; no AWS"
+  }
+  heavy: Heavy runner {
+    class: box
+    does: "claim → EC2/SSM → pointer → terminate → finish"
+    file: .github/workflows/noop-baked.yml
+    uses: "OIDC for AWS; anon key + callback token for Supabase"
+    token: "callback token stays on runner; not sent to EC2"
+  }
+}
+
+aws: "AWS — us-east-1; heavy path only" {
+  class: plane
+  style: {fill: "#f9f1e3"; stroke: "#c17d1a"}
+  ec2: Ephemeral EC2 {
+    class: box
+    launch: launch template cmx-noop-baked-base
+    profile: cannamatrix-genotype-runner
+    runtime: /opt/cmx/noop_baked/science.py
+    source: components/noop_baked/science/science.py
+    does: writes result.json + result.json.meta to S3
+  }
+  ssm: AWS Systems Manager {
+    class: box
+    does: "receives runner command; exposes invocation status"
+    location: AWS console → Systems Manager → Run Command
+    caller: .github/workflows/noop-baked.yml
+  }
+  s3: Tenant S3 bucket {
+    class: box
+    bucket: "cmx-tenant-<org_slug>-<account_id>"
+    prefix: "genotype-results/<job_id>/"
+    objects: result.json + result.json.meta
+    location: "AWS object storage; no repository file"
+  }
+}
+
+supabase: Supabase {
+  class: plane
+  style: {fill: "#e8f3ef"; stroke: "#35806f"}
+  auth: Supabase Auth {
+    class: box
+    does: password authentication + user sessions
+    location: "Supabase service; called from login page"
+  }
+  db: Postgres + REST/RPC API {
+    class: box
+    holds: "jobs + job_artifacts; organization-scoped reads"
+    user: queued job INSERT + mint under caller's org
+    machine: record_job_started → insert_job_artifact → record_job_finished
+    auth: "machine RPCs check callback token; mint checks user org"
+    jobs: supabase/migrations/0002_samples_jobs.sql
+    mint_start: supabase/migrations/0014_resilience_reaper_hardening.sql
+    artifact: supabase/migrations/0015_job_artifacts_maturity_not_available.sql
+    finish: supabase/migrations/0012_remove_spend_cap.sql
+  }
+}
+
+browser.login -> supabase.auth: "1 · sign in / session" {class: flow}
+browser.ui -> vercel.api: "2 · Run (session cookie)" {class: flow}
+vercel.api -> supabase.db: "3 · create queued job + mint token" {class: flow}
+vercel.api -> github.light: "4L · dispatch noop.yml" {class: flow}
+vercel.api -> github.heavy: "4H · dispatch noop-baked.yml" {class: heavy}
+github.light -> supabase.db: "5L · claim, then insert inline result, then finish" {class: flow}
+github.heavy -> supabase.db: "5H · claim, later insert pointer, finally finish" {class: heavy}
+github.heavy -> aws.ec2: "H1 · launch; later request termination" {class: heavy}
+github.heavy -> aws.ssm: "H2 · send command + poll status" {class: heavy}
+aws.ssm -> aws.ec2: "H3 · execute science command" {class: heavy}
+aws.ec2 -> aws.s3: "H4 · write result + sidecar" {class: heavy}
+github.heavy -> aws.s3: "H5 · read sidecar + check object sizes" {class: heavy}
+browser.ui -> vercel.results: "6 · router.refresh() while waiting" {class: flow}
+vercel.results -> supabase.db: "7 · read job + artifact under user RLS" {class: flow}
+vercel.results -> browser.ui: "8 · rendered result card" {class: flow}

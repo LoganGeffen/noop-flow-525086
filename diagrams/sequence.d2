@@ -1,0 +1,58 @@
+shape: sequence_diagram
+
+browser: "Browser\nRun controls + refresh\nfrontend/app/dev/noop/NoopRunner.tsx" {style.fill: "#eeeaf6"}
+api: "Next.js server\nRun API + server rendering\nfrontend/lib/devJob.ts\nfrontend/app/dev/noop/page.tsx" {style.fill: "#eaf1f8"}
+supa: "Supabase\nAuth + REST/RPC + Postgres\nsupabase/migrations/" {style.fill: "#e8f3ef"}
+gha: "GitHub Actions\nselected workflow\n.github/workflows/noop.yml\n.github/workflows/noop-baked.yml" {style.fill: "#eef0f3"}
+ssm: "AWS SSM\ncommand + invocation status" {style.fill: "#f9f1e3"}
+ec2: "EC2\nbaked science process\ncomponents/noop_baked/science/science.py" {style.fill: "#f9f1e3"}
+s3: "S3\nresult + sidecar" {style.fill: "#f9f1e3"}
+
+signin: "Sign in when no session exists" {
+  browser -> supa: "signInWithPassword → Supabase Auth"
+  supa -> browser: "user session" {style.stroke-dash: 5}
+}
+dispatch: "Create and dispatch" {
+  browser -> api: "POST /api/noop/run OR /api/noop-baked/run · input_text + session cookie"
+  api -> supa: "getUser; resolve org from profiles + orgs"
+  api -> supa: "INSERT jobs: kind=noop OR noop_baked; status=queued"
+  api -> supa: "mint_job_callback_token(job_id) · authenticated user's org"
+  supa -> api: "callback token; DB retains hash + expiry" {style.stroke-dash: 5}
+  api -> gha: "workflow_dispatch(ref, inputs) · server GitHub token"
+}
+failure: "ALT: dispatch throws — no successful dispatch path below" {
+  api -> supa: "record_job_finished(failed, dispatch_failed) · attempt"
+  api -> browser: "error response" {style.stroke-dash: 5}
+}
+accepted: "ALT: dispatch accepted" {
+  api -> browser: "{ jobId } — browser refreshes immediately" {style.stroke-dash: 5}
+  compute: "Selected workflow runs asynchronously; page polling overlaps this work" {
+    light: "ALT: LIGHT · noop.yml" {
+      gha -> supa: "record_job_started(job_id, token, gha_run_id)"
+      gha -> gha: "noop.py --in /tmp/noop_in.txt --out /tmp/noop_result.json"
+      gha -> supa: "post_artifact.py → insert_job_artifact(kind=noop, inline result)"
+      gha -> supa: "record_job_finished(done | failed) · always() attempt"
+    }
+    heavy: "ALT: HEAVY · noop-baked.yml; proceed only when claim succeeds" {
+      gha -> supa: "record_job_started(job_id, token, gha_run_id)"
+      gha -> gha: "assume AWS role using OIDC; derive tenant S3 prefix"
+      gha -> ec2: "launch from cmx-noop-baked-base template; wait for running"
+      gha -> ssm: "wait for SSM Online; send-command (no callback token)"
+      ssm -> ec2: "science.py --in /tmp/nb_in.txt --out-s3 PREFIX --ran-on ec2"
+      ec2 -> s3: "write result.json + result.json.meta · instance profile"
+      gha -> ssm: "poll get-command-invocation"
+      ssm -> gha: "Success / Failed / Cancelled / TimedOut" {style.stroke-dash: 5}
+      gha -> s3: "head objects; read sidecar; compare payload bytes"
+      gha -> gha: "build pointer with summary + metadata SHA-256 (not recomputed)"
+      gha -> supa: "insert_job_artifact(kind=noop_baked, pointer)"
+      gha -> ec2: "request termination · always() + claimed + instance ID"
+      gha -> supa: "record_job_finished(done | failed) · always() + claimed; retries"
+    }
+  }
+}
+poll: "CONCURRENT LOOP after accepted dispatch · every 10 seconds while waiting" {
+  browser -> api: "router.refresh() → re-render /dev/noop"
+  api -> supa: "SELECT latest visible noop job + matching artifact · user RLS"
+  supa -> api: "rows" {style.stroke-dash: 5}
+  api -> browser: "render NoopCard OR NoopBakedCard" {style.stroke-dash: 5}
+}

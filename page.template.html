@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>noop reference pipeline</title>
+<style>
+  html { color-scheme: light; }
+  :root {
+    --bg: #ffffff;
+    --text: #222528;
+    --muted: #454b54;
+    --faint: #6d7480;
+    --hairline: #e4e5e8;
+    --rule: #d5d7dc;
+    --accent: #2f4d73;
+    --code-bg: #f4f5f7;
+    --figure-bg: #ffffff;
+    --figure-border: #dcdfe4;
+    --sans: -apple-system, "Helvetica Neue", Helvetica, Arial, "Segoe UI", Roboto, sans-serif;
+    --mono: "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #ffffff; --text: #222528; --muted: #454b54; --faint: #6d7480;
+      --hairline: #e4e5e8; --rule: #d5d7dc; --accent: #2f4d73; --code-bg: #f4f5f7;
+      --figure-bg: #ffffff; --figure-border: #dcdfe4;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #ffffff; --text: #222528; --muted: #454b54; --faint: #6d7480;
+    --hairline: #e4e5e8; --rule: #d5d7dc; --accent: #2f4d73; --code-bg: #f4f5f7;
+    --figure-bg: #ffffff; --figure-border: #dcdfe4;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff; --text: #222528; --muted: #454b54; --faint: #6d7480;
+    --hairline: #e4e5e8; --rule: #d5d7dc; --accent: #2f4d73; --code-bg: #f4f5f7;
+    --figure-bg: #ffffff; --figure-border: #dcdfe4;
+  }
+
+  * { box-sizing: border-box; }
+  .wrap {
+    font-family: var(--sans); color: var(--text); background: var(--bg);
+    line-height: 1.62; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    padding: clamp(2.4rem, 5vw, 4.5rem) 1.5rem 6rem;
+  }
+  .col { max-width: 880px; margin: 0 auto; }
+
+  .doc-label { font-family: var(--mono); font-size: .74rem; letter-spacing: .04em; color: var(--muted); margin: 0 0 .7rem; }
+  h1 { font-size: clamp(1.6rem, 3.2vw, 2.1rem); line-height: 1.15; letter-spacing: -.01em; font-weight: 700; margin: 0 0 .7rem; }
+  .abstract { font-size: 1.02rem; color: var(--muted); max-width: 74ch; margin: 0 0 .4rem; }
+  .abstract code { color: var(--text); }
+  .rule { border: 0; border-top: 1px solid var(--rule); margin: 2.4rem 0 0; }
+
+  h2 {
+    font-size: 1.12rem; font-weight: 700; letter-spacing: -.005em; margin: 2.6rem 0 1.1rem;
+    padding-bottom: .5rem; border-bottom: 1px solid var(--hairline);
+    display: flex; align-items: baseline; gap: .7rem;
+  }
+  h2 .n { color: var(--accent); font-variant-numeric: tabular-nums; }
+  h2 .t { flex: 1; }
+  h2 .std { font-family: var(--mono); font-size: .68rem; font-weight: 500; color: var(--faint); letter-spacing: .02em; }
+
+  p { margin: 0 0 1rem; }
+  .lead { color: var(--text); font-size: .96rem; max-width: 76ch; }
+  code { font-family: var(--mono); font-size: .85em; background: var(--code-bg); color: var(--text); padding: .08em .36em; border-radius: 3px; white-space: nowrap; }
+
+  figure { margin: 1.4rem 0 0; }
+  .figbox {
+    background: var(--figure-bg); border: 1px solid var(--figure-border); border-radius: 4px;
+    padding: 1.4rem 1.2rem; overflow-x: auto;
+  }
+  .figbox > svg { display: block; height: auto; max-width: 100%; margin: 0 auto; }
+  .figbox.wide > svg { max-width: none; }
+  a { color: var(--accent); text-underline-offset: .18em; }
+  svg a.source-link { cursor: pointer; }
+  svg a.source-link text, svg a.source-link tspan { fill: #244f82; text-decoration: underline; }
+  svg a.source-link:hover text, svg a.source-link:hover tspan { fill: #0b3161; }
+  svg a.source-link:focus { outline: 3px solid #d79a2e; }
+  .reference-note { font-size: .82rem; color: var(--muted); margin-top: .7rem; }
+  figcaption { font-size: .82rem; color: var(--muted); margin-top: .7rem; line-height: 1.5; }
+  figcaption b { color: var(--text); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.3rem; margin-top: .55rem; font-size: .8rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: .45rem; }
+  .sw { width: .78rem; height: .78rem; border-radius: 2px; border: 1px solid rgba(0,0,0,.2); }
+
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; margin-top: 1.3rem; }
+  caption { text-align: left; font-size: .82rem; color: var(--muted); margin-bottom: .6rem; }
+  caption b { color: var(--text); font-weight: 600; }
+  thead th { text-align: left; font-weight: 600; font-size: .78rem; color: var(--muted); padding: .5rem .8rem; border-bottom: 1.5px solid var(--rule); white-space: nowrap; }
+  tbody td { padding: .52rem .8rem; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; width: 1.5rem; }
+  td.k { font-weight: 600; white-space: nowrap; }
+  td .m, td.cred { font-family: var(--mono); font-size: .82em; color: var(--muted); white-space: nowrap; }
+  td code { background: transparent; padding: 0; color: var(--text); white-space: normal; }
+  .tablewrap { overflow-x: auto; }
+
+  .footnote { font-size: .82rem; color: var(--muted); margin-top: 1rem; max-width: 76ch; }
+  .footnote b { color: var(--text); font-weight: 600; }
+  footer { margin-top: 3.6rem; padding-top: 1rem; border-top: 1px solid var(--hairline); font-size: .78rem; color: var(--faint); }
+  footer .mono { font-family: var(--mono); }
+
+  figure { position: relative; left: 50%; transform: translateX(-50%); width: 92vw; max-width: 1200px; }
+  .zoombar { display:flex; gap:.4rem; align-items:center; margin:1.4rem 0 -.3rem; font-size:.8rem; color:var(--faint); }
+  .zoombar button { font-family:var(--mono); font-size:.78rem; line-height:1; padding:.32rem .62rem; border:1px solid var(--rule); background:transparent; color:var(--text); border-radius:4px; cursor:pointer; }
+  .zoombar button:hover { border-color:var(--accent); color:var(--accent); }
+  .zoombar .hint { margin-left:.5rem; }
+  .figbox.wide { cursor:grab; }
+  .figbox.wide:active { cursor:grabbing; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="col">
+    <p class="doc-label">Cannamatrix platform architecture note</p>
+    <h1>The noop reference pipelines: light and heavy</h1>
+    <p class="abstract"><code>noop</code> and <code>noop_baked</code> are diagnostic modules: they exercise the platform wiring without biological analysis. <b>Light</b> computes on the GitHub runner and stores an inline JSON result. <b>Heavy</b> computes on temporary EC2, writes the payload to S3, and has the GitHub runner store a pointer and summary in Supabase. Both share the job and artifact contract; heavy adds AWS authentication, SSM, storage checks, and cleanup.</p>
+    <p class="abstract" style="font-size:.9rem;margin-top:.2rem"><b>How to read it.</b> Figure 1 groups code by where it executes. <b>Underlined paths inside the boxes</b> open the corresponding source file or directory in a new tab. AWS resource names and machine-local paths are labeled separately. Use the arrow key for the operations; Figure 2 shows their ordering.</p>
+    <p class="reference-note">Code reference: <a href="@TREE@">platform-v2-modular at @REV_SHORT@</a> · reviewed September 15, 2026. Source links stay on this revision and require repository access.</p>
+    <hr class="rule">
+
+    <h2 id="locations"><span class="n">1</span><span class="t">Where the code runs</span><span class="std">implementation map</span></h2>
+    <figure>
+      <div class="figbox wide">@FIGURE_LOCATIONS@</div>
+      <div class="legend"><span><span class="sw" style="background:#776592"></span>Browser</span><span><span class="sw" style="background:#3d6aa6"></span>Vercel</span><span><span class="sw" style="background:#5c6470"></span>GitHub Actions</span><span><span class="sw" style="background:#c17d1a"></span>AWS (heavy path)</span><span><span class="sw" style="background:#35806f"></span>Supabase</span></div>
+      <figcaption><b>Figure 1.</b> Browser controls, Next.js server code, GitHub runners, AWS resources, and Supabase are distinct execution locations. Light and heavy are alternative workflows. Each runner records its start <b>before</b> computation, writes the result <b>after</b> computation, and attempts to finish the job. Heavy inserts its pointer, then requests EC2 termination, then attempts the final job update. Arrows to Supabase summarize these separate lifecycle calls; they are not a single save operation.</figcaption>
+    </figure>
+
+    <div class="tablewrap" id="key-fig1">
+      <table>
+        <caption><b>Key to Figure 1.</b> Numbered relationships and the two alternative compute paths.</caption>
+        <tbody>
+          <tr><td class="num">1</td><td>The browser signs in through Supabase Auth. The login page calls <code>signInWithPassword</code>; the user session is carried by the browser. Unauthenticated visits to <code>/dev/noop</code> redirect to <code>/login</code>.</td></tr>
+          <tr><td class="num">2</td><td>The browser posts <code>input_text</code> to <code>/api/noop/run</code> (light) or <code>/api/noop-baked/run</code> (heavy), carrying the session cookie. The API also supports an optional own-org <code>sample_id</code>; the diagnostic page does not supply it.</td></tr>
+          <tr><td class="num">3</td><td>The shared handler calls <code>getUser()</code>, resolves membership from <code>profiles</code> joined to <code>orgs</code>, inserts an own-org queued job, and calls <code>mint_job_callback_token</code>. The job kind is <code>noop</code> or <code>noop_baked</code>. Mint checks the authenticated caller's org, returns plaintext, and stores only its hash and expiry (four-hour default).</td></tr>
+          <tr><td class="num">4L</td><td>Dispatch <code>noop.yml</code> with <code>job_id</code>, <code>callback_token</code>, and <code>input_text</code>. The workflow supplies its default <code>maturity=provisional</code>.</td></tr>
+          <tr><td class="num">4H</td><td>Dispatch <code>noop-baked.yml</code> with those three inputs plus server-derived <code>org_slug</code> and <code>maturity=provisional</code>. Both dispatches select <code>GH_WORKFLOW_REF</code>, falling back to <code>platform-v2-modular</code>. The server uses <code>GITHUB_DISPATCH_TOKEN</code>; the browser receives only <code>{ jobId }</code> on success.</td></tr>
+          <tr><td class="num">5L</td><td>The light runner calls <code>record_job_started</code>, runs <code>noop.py</code>, and uses <code>post_artifact.py</code> to call <code>insert_job_artifact</code> with inline JSON. It then attempts <code>record_job_finished(done | failed)</code>. Callback writes use the Supabase anon key plus job token.</td></tr>
+          <tr><td class="num">5H</td><td>The heavy runner first claims the job. Only a successful claim proceeds to AWS. After the S3 checks, it calls <code>insert_job_artifact</code> with a pointer envelope (<code>schema_version</code>, <code>storage</code>, <code>outputs</code>, <code>summary</code>), requests termination, and attempts <code>record_job_finished</code> with bounded retries. A successful finish clears the token hash and expiry.</td></tr>
+          <tr><td class="num">H1</td><td>Assume the AWS role with GitHub OIDC and launch EC2 using the <b>launch template</b> <code>cmx-noop-baked-base</code>. That template chooses the baked AMI and instance profile <code>cannamatrix-genotype-runner</code>. The runner retains the EC2 instance ID for SSM and cleanup. It later requests termination when an instance ID exists.</td></tr>
+          <tr><td class="num">H2</td><td>Wait for EC2 to be running and its SSM agent to be online. Send the input and science command through SSM, then poll <code>get-command-invocation</code>. Completion is observed through the SSM API; EC2 does not call GitHub back.</td></tr>
+          <tr><td class="num">H3</td><td>SSM runs <code>/opt/cmx/noop_baked/science.py --in /tmp/nb_in.txt --out-s3 PREFIX --ran-on ec2</code>. Input text is staged by the command. No Supabase callback token is sent to the instance.</td></tr>
+          <tr><td class="num">H4</td><td>The science process uses the instance profile to write <code>result.json</code> and <code>result.json.meta</code> under <code>s3://cmx-tenant-&lt;org_slug&gt;-&lt;account_id&gt;/genotype-results/&lt;job_id&gt;/</code>.</td></tr>
+          <tr><td class="num">H5</td><td>The runner verifies that both objects exist and are nonempty, reads the sidecar, validates its fields, and compares payload size with sidecar bytes. It copies the sidecar's SHA-256 into the pointer; it does <b>not</b> recompute the payload hash.</td></tr>
+          <tr><td class="num">6–8</td><td>After accepted dispatch, the browser refreshes immediately and then every ten seconds while waiting. The server reads the newest RLS-visible job across both noop kinds and its matching artifact, then renders the result card. This is not a browser-pinned job lookup. Polling stops on a terminal status or available artifact.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+
+    <p class="footnote"><b>Two authorization paths.</b> Job creation and result reads use the signed-in user's RLS context; mint is a <code>SECURITY DEFINER</code> function that checks the caller's organization. Runner lifecycle and artifact RPCs execute with owner privileges and validate the job token. The inspected noop flow uses no service-role API key. <code>always()</code> means cleanup is attempted when the workflow can run it; it does not guarantee that cleanup or the final RPC succeeds.</p>
+
+    <h2><span class="n">2</span><span class="t">Request sequence</span><span class="std">UML · sequence</span></h2>
+    <figure>
+      <div class="figbox wide">@FIGURE_SEQUENCE@</div>
+      <figcaption><b>Figure 2.</b> Choose the dispatch-failure branch or the accepted-dispatch branch; an accepted job then runs either light or heavy. Polling is shown separately at the bottom for readability and <b>overlaps execution</b>. On <code>/dev/noop</code>, it stops when the latest visible noop job is terminal <b>or an artifact exists</b>. A result card can therefore appear before cleanup and finalization complete. Supabase Auth handles sign-in; the REST/RPC API handles database operations.</figcaption>
+    </figure>
+
+    <h2><span class="n">3</span><span class="t">Data model</span><span class="std">entity–relationship</span></h2>
+    <figure>
+      <div class="figbox wide">@FIGURE_DATA@</div>
+      <figcaption><b>Figure 3.</b> Selected columns and relationships from the platform schema. Tenant-owned business-object references use composite foreign keys including <code>org_id</code>; references to <code>auth.users</code> and tenant roots are separate. The displayed security rules describe <b>reads</b>, not every write permission. <code>job_artifacts</code> has <code>UNIQUE(job_id, kind)</code> and stores one module result per job/kind. Heavy noop stores an S3 pointer in its <code>result</code> JSONB column; it adds no new table. Predictions and models are related platform data, not outputs produced by noop.</figcaption>
+    </figure>
+    <p class="footnote"><code>jobs.envelope</code> in the drawing is shorthand for real metadata columns, not an actual column. <b>Neither noop workflow populates <code>jobs.instance_id</code>, job-level S3 output fields, or cost fields.</b> Heavy keeps its instance ID in workflow step outputs and stores the result pointer in <code>job_artifacts.result</code>. Both workflows record the GitHub run ID and lifecycle timestamps. The enum also contains reserved values <code>dispatched</code>, <code>cancelled</code>, and <code>succeeded</code>; these are not extra stages that noop traverses. Sources: <a href="@CODE@/supabase/migrations/0002_samples_jobs.sql">jobs schema</a>, <a href="@CODE@/supabase/migrations/0013_job_artifacts.sql">artifact schema</a>, <a href="@CODE@/supabase/migrations/0016_db_cleanup.sql">status and policy notes</a>.</p>
+
+
+    <h2><span class="n">4</span><span class="t">Big picture</span><span class="std">overview</span></h2>
+    <p class="lead" style="color:var(--muted)">The whole loop in one view, with the detail stripped out. Start at the user and follow the numbers.</p>
+    <figure id="fig4">
+      <div class="figbox wide">@FIGURE_OVERVIEW@</div>
+      <figcaption><b>Figure 4.</b> The same flow at a higher level. The user clicks Run in the browser; the server creates the job and token, then dispatches GitHub Actions. Light computes on the GitHub runner. Heavy computes on EC2 and writes to S3. <b>GitHub</b> writes the inline result or S3 pointer into Supabase, and the server reads it to render the card. Heavy cards use the pointer's summary; they do not fetch the S3 payload.</figcaption>
+    </figure>
+
+    <footer>
+      <span class="mono">Reference for <a href="@TREE@">CannamatrixAI @REV_SHORT@</a> · September 15, 2026. Source locations are pinned to the reviewed revision. AWS launch-template, image, profile and OIDC-trust metadata were checked on that date. This page documents the source contract; exact deployed frontend/database/image parity and a fresh end-to-end run are not established by the diagrams.</span>
+    </footer>
+  </div>
+</div>
+
+<script data-zoom-init>
+(function(){
+  document.querySelectorAll('.figbox.wide').forEach(function(box){
+    var svg = box.querySelector('svg'); if(!svg) return;
+    var vb = (svg.getAttribute('viewBox')||'0 0 1000 1000').split(/\s+/).map(Number);
+    var baseW = vb[2] || 1000, scale = 1, maxS = 6;
+    box.style.overflow = 'auto';
+    function fitScale(){ return Math.min(1, (box.clientWidth - 36) / baseW); }
+    function minScale(){ return Math.min(fitScale()*0.6, 0.25); }
+    function apply(){ svg.style.width = (baseW*scale)+'px'; svg.style.maxWidth='none'; svg.style.height='auto'; }
+    function fit(){ scale = fitScale(); apply(); box.scrollLeft=0; box.scrollTop=0; }
+    function zoomAt(cx, cy, f){
+      var ns = Math.max(minScale(), Math.min(maxS, scale*f)); if(ns===scale) return;
+      var r = ns/scale, sx = box.scrollLeft+cx, sy = box.scrollTop+cy;
+      scale = ns; apply(); box.scrollLeft = sx*r-cx; box.scrollTop = sy*r-cy;
+    }
+    var bar = document.createElement('div'); bar.className = 'zoombar';
+    bar.innerHTML = '<button type="button" data-z="out">– zoom</button>'+
+                    '<button type="button" data-z="fit">Fit</button>'+
+                    '<button type="button" data-z="in">zoom +</button>'+
+                    '<span class="hint">drag to pan · ⌘/Ctrl-scroll to zoom</span>';
+    box.parentNode.insertBefore(bar, box);
+    bar.addEventListener('click', function(e){
+      var z = e.target.getAttribute('data-z'); if(!z) return;
+      if(z==='fit'){ fit(); return; }
+      zoomAt(box.clientWidth/2, box.clientHeight/2, z==='in'?1.3:1/1.3);
+    });
+    box.addEventListener('wheel', function(e){
+      if(!(e.ctrlKey||e.metaKey)) return;
+      e.preventDefault();
+      var r = box.getBoundingClientRect();
+      zoomAt(e.clientX-r.left, e.clientY-r.top, e.deltaY<0?1.12:1/1.12);
+    }, {passive:false});
+    var drag=false, lx, ly;
+    box.addEventListener('mousedown', function(e){ if(e.button !== 0 || e.target.closest('a')) return; drag=true; lx=e.clientX; ly=e.clientY; e.preventDefault(); });
+    window.addEventListener('mousemove', function(e){ if(!drag) return; box.scrollLeft-=(e.clientX-lx); box.scrollTop-=(e.clientY-ly); lx=e.clientX; ly=e.clientY; });
+    window.addEventListener('mouseup', function(){ drag=false; });
+    var rt; window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(function(){ if(Math.abs(scale-fitScale())<0.03) fit(); }, 200); });
+    fit();
+  });
+})();
+</script>
+</body>
+</html>
