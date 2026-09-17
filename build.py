@@ -21,7 +21,7 @@ SCREEN_LINKS = {
     "Open launch template": "https://us-east-1.console.aws.amazon.com/ec2/home?region=us-east-1#LaunchTemplates:",
     "Open SSM commands": "https://us-east-1.console.aws.amazon.com/systems-manager/run-command?region=us-east-1",
     "Open S3 outputs": "https://s3.console.aws.amazon.com/s3/buckets/cmx-tenant-internal-050752621192?region=us-east-1&prefix=genotype-results%2F&showversions=false",
-    "Open Supabase": "https://supabase.com/dashboard/project/mydyodpsytaznskiemna/sql/new",
+    "Open Supabase": "https://supabase.com/dashboard/project/mydyodpsytaznskiemna/editor",
     "Open Supabase Auth": "https://supabase.com/dashboard/project/mydyodpsytaznskiemna/auth/users",
 }
 
