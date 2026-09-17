@@ -73,10 +73,20 @@
   .figbox > svg { display: block; height: auto; max-width: 100%; margin: 0 auto; }
   .figbox.wide > svg { max-width: none; }
   a { color: var(--accent); text-underline-offset: .18em; }
-  svg a.source-link { cursor: pointer; }
-  svg a.source-link text, svg a.source-link tspan { fill: #244f82; text-decoration: underline; }
-  svg a.source-link:hover text, svg a.source-link:hover tspan { fill: #0b3161; }
-  svg a.source-link:focus { outline: 3px solid #d79a2e; }
+  .wrap .figbox svg a.source-link { cursor: pointer; }
+  .wrap .figbox svg a.source-link text, .wrap .figbox svg a.source-link tspan { fill: #244f82 !important; text-decoration: underline; }
+  .wrap .figbox svg a.source-link:hover text, .wrap .figbox svg a.source-link:hover tspan { fill: #0b3161 !important; }
+  .wrap .figbox svg a.source-link:focus { outline: 3px solid #d79a2e; }
+  .wrap .figbox svg a.screen-link { cursor: pointer; }
+  .wrap .figbox svg a.screen-link text, .wrap .figbox svg a.screen-link tspan { fill: #116648 !important; text-decoration: underline; font-weight: 700; }
+  .wrap .figbox svg a.screen-link:hover text, .wrap .figbox svg a.screen-link:hover tspan { fill: #073e2b !important; }
+  .wrap .figbox svg a.screen-link:focus { outline: 3px solid #d79a2e; }
+  .walkthrough { margin: 1.3rem 0; padding: 1rem 1.2rem; border: 1px solid var(--rule); border-radius: 4px; }
+  .walkthrough summary { cursor: pointer; font-weight: 600; }
+  .walkthrough li { margin-top: .65rem; font-size: .88rem; }
+  .walkthrough ol { padding-left: 1.2rem; }
+  pre { overflow-x: auto; background: var(--code-bg); padding: 1rem; font-size: .8rem; line-height: 1.5; }
+  pre code { white-space: pre; padding: 0; }
   .reference-note { font-size: .82rem; color: var(--muted); margin-top: .7rem; }
   figcaption { font-size: .82rem; color: var(--muted); margin-top: .7rem; line-height: 1.5; }
   figcaption b { color: var(--text); font-weight: 600; }
@@ -113,18 +123,46 @@
 <body>
 <div class="wrap">
   <div class="col">
-    <p class="doc-label">Cannamatrix platform architecture note</p>
+    <p class="doc-label">Cannamatrix platform · walkthrough for Kyla</p>
     <h1>The noop reference pipelines: light and heavy</h1>
     <p class="abstract"><code>noop</code> and <code>noop_baked</code> are diagnostic modules: they exercise the platform wiring without biological analysis. <b>Light</b> computes on the GitHub runner and stores an inline JSON result. <b>Heavy</b> computes on temporary EC2, writes the payload to S3, and has the GitHub runner store a pointer and summary in Supabase. Both share the job and artifact contract; heavy adds AWS authentication, SSM, storage checks, and cleanup.</p>
-    <p class="abstract" style="font-size:.9rem;margin-top:.2rem"><b>How to read it.</b> Figure 1 groups code by where it executes. <b>Underlined paths inside the boxes</b> open the corresponding source file or directory in a new tab. AWS resource names and machine-local paths are labeled separately. Use the arrow key for the operations; Figure 2 shows their ordering.</p>
-    <p class="reference-note">Code reference: <a href="@TREE@">platform-v2-modular at @REV_SHORT@</a> · reviewed September 15, 2026. Source links stay on this revision and require repository access.</p>
+    <p class="abstract" style="font-size:.9rem;margin-top:.2rem"><b>Use the diagram as your home tab.</b> Green <b>Open…</b> links inside the boxes open the live screen. Blue file paths open its code. Return here between stops. <a href="#locations">Go to diagram ↓</a></p>
+    <p class="reference-note"><b>Version check · September 17:</b> source links include <a href="@TREE@">Kyla’s merged September 13 code (@REV_SHORT@)</a>; <a href="https://vercel.com/cannamatrix1/cannamatrix-ai/DdnuFNZ6s5gsv6iSWfyzVMZ5pyJq" target="_blank" rel="noopener noreferrer">production still points to July 13</a>. The noop workflows and science programs are unchanged between those revisions. A fresh complete run still needs rehearsal.</p>
+
+    <details class="walkthrough" id="walkthrough" open>
+      <summary>Recording click order</summary>
+      <p style="margin-top:.7rem;font-size:.88rem"><b>Before recording:</b> open the green links once and sign in. AWS: account <code>050752621192</code>, region <code>us-east-1</code>. In the platform tab, open DevTools → Network. Prepare the database query below. On the diagram, use <b>zoom +</b> until the active box is readable; drag to pan. Capture the short live run first; pause afterward to explain code.</p>
+      <ol>
+        <li><b>Run API + dispatch</b> → <b>Open Vercel</b> → current Production deployment. Show the date and revision. Return to the diagram.</li>
+        <li><b>Run controls + refresh</b> → <b>Open platform</b> → Light → enter <code>kyla-noop-demo</code> → Run noop. Network → <code>/api/noop/run</code> → Response: copy <code>jobId</code>.</li>
+        <li><b>Postgres + REST/RPC API</b> → <b>Open Supabase</b> → paste that ID into the query → Run. Copy <code>gha_run_id</code>. <b>Light runner</b> → <b>Open light workflow</b> → matching run → <b>noop</b> → Run science CLI. Return to the database for its result, then the platform for its card.</li>
+        <li><b>Run controls + refresh</b> → platform tab → Heavy → Run noop-baked. Capture the new <code>jobId</code> and query its <code>gha_run_id</code>. <b>Heavy runner</b> → <b>Open heavy workflow</b> → matching run → <b>noop-baked</b> → Launch EC2 from launch template: copy <code>i-…</code>.</li>
+        <li><b>Ephemeral EC2</b> → <b>Open EC2 instances</b> → filter by that instance ID. Show its state and <code>GHA_RunId</code> tag. It may finish quickly; capture this screen promptly.</li>
+        <li>Heavy workflow tab → Send science command: copy command ID. <b>AWS Systems Manager</b> → <b>Open SSM commands</b> → Command history → that command → target instance → output. Show the command and status.</li>
+        <li><b>Tenant S3 bucket</b> → <b>Open S3 outputs</b> → heavy job ID folder → <code>result.json</code> and <code>result.json.meta</code>. Show their contents. For another organization, use the bucket printed in Resolve output S3 URI.</li>
+        <li><b>Postgres + REST/RPC API</b> → database tab → rerun query: show the <code>noop_baked</code> artifact’s S3 pointer and summary. <b>Server-rendered results</b> → platform tab → show the same result on the card. Finish with Actions → Terminate EC2 / record_job_finished; EC2 → terminated; database → done.</li>
+      </ol>
+      <p style="font-size:.88rem;margin-bottom:0"><b>Code pass:</b> return to each box and click its blue file path. Focus on the Run controls, API route, workflow, science program, and result page/card. In September’s source, dispatch moved into <code>frontend/lib/devJob.ts</code>; July’s deployed base keeps it inline in each route. <a href="https://github.com/Cannamatrix-team/CannamatrixAI/tree/751ac517ea8a010461606e924dfd83278896c68d/frontend" target="_blank" rel="noopener noreferrer">July source base</a>.</p>
+    </details>
+    <details class="walkthrough" id="database-query">
+      <summary>Supabase query — copy once; replace the job ID for each run</summary>
+      <p style="margin-top:.7rem;font-size:.88rem">Open Supabase → SQL Editor. Run each SELECT separately to see its results. Job IDs match across the browser response, database, and S3 folder. <code>gha_run_id</code> is the number at the end of the Actions run URL. These admin reads show stored data, not the user’s access policy.</p>
+      <pre><code>select id, kind, status, gha_run_id, created_at, started_at, finished_at
+from public.jobs
+where id = 'PASTE_JOB_ID'::uuid;
+
+select job_id, kind, result
+from public.job_artifacts
+where job_id = 'PASTE_JOB_ID'::uuid;</code></pre>
+      <p style="font-size:.88rem;margin-bottom:0">Keep tokens and browser request headers outside the recording. A visible card can precede final cleanup; verify the job and instance states at the end.</p>
+    </details>
     <hr class="rule">
 
     <h2 id="locations"><span class="n">1</span><span class="t">Where the code runs</span><span class="std">implementation map</span></h2>
     <figure>
       <div class="figbox wide">@FIGURE_LOCATIONS@</div>
       <div class="legend"><span><span class="sw" style="background:#776592"></span>Browser</span><span><span class="sw" style="background:#3d6aa6"></span>Vercel</span><span><span class="sw" style="background:#5c6470"></span>GitHub Actions</span><span><span class="sw" style="background:#c17d1a"></span>AWS (heavy path)</span><span><span class="sw" style="background:#35806f"></span>Supabase</span></div>
-      <figcaption><b>Figure 1.</b> Browser controls, Next.js server code, GitHub runners, AWS resources, and Supabase are distinct execution locations. Light and heavy are alternative workflows. Each runner records its start <b>before</b> computation, writes the result <b>after</b> computation, and attempts to finish the job. Heavy inserts its pointer, then requests EC2 termination, then attempts the final job update. Arrows to Supabase summarize these separate lifecycle calls; they are not a single save operation.</figcaption>
+      <figcaption><b>Figure 1.</b> Green links open the live screen; blue paths open the source. <a href="#walkthrough">Back to click order ↑</a>. Browser, Vercel, GitHub, AWS, and Supabase are distinct execution locations. Heavy inserts its pointer, requests EC2 termination, then attempts the final job update. Arrows to Supabase summarize separate lifecycle calls.</figcaption>
     </figure>
 
     <div class="tablewrap" id="key-fig1">

@@ -12,6 +12,7 @@ browser: "Browser — user's device" {
   style: {fill: "#f2f0f8"; stroke: "#776592"}
   ui: "Run controls + refresh" {
     class: box
+    open: Open platform
     type: React client components
     does: "selects light/heavy; POSTs input; refreshes page"
     file: frontend/app/dev/noop/NoopRunner.tsx
@@ -19,6 +20,7 @@ browser: "Browser — user's device" {
   }
   login: Password sign-in {
     class: box
+    open: Open login
     type: React client component
     does: signInWithPassword → user session
     file: frontend/app/login/page.tsx
@@ -30,6 +32,7 @@ vercel: "Vercel — Next.js server" {
   style: {fill: "#eaf1f8"; stroke: "#3d6aa6"}
   api: Run API + dispatch {
     class: box
+    open: Open Vercel
     does: "authenticate → resolve org → create job → mint → dispatch"
     light: frontend/app/api/noop/run/route.ts
     heavy: frontend/app/api/noop-baked/run/route.ts
@@ -40,6 +43,7 @@ vercel: "Vercel — Next.js server" {
   }
   results: Server-rendered results {
     class: box
+    open: Open platform
     does: "reads latest visible noop job + artifact; renders card"
     file: frontend/app/dev/noop/page.tsx
     cards: frontend/app/plants/results/modules/
@@ -51,6 +55,7 @@ github: GitHub Actions runners {
   class: plane
   light: Light runner {
     class: box
+    open: Open light workflow
     does: "claim → compute locally → insert result → finish"
     file: .github/workflows/noop.yml
     science: components/noop/science/noop.py
@@ -59,6 +64,7 @@ github: GitHub Actions runners {
   }
   heavy: Heavy runner {
     class: box
+    open: Open heavy workflow
     does: "claim → EC2/SSM → pointer → terminate → finish"
     file: .github/workflows/noop-baked.yml
     uses: "OIDC for AWS; anon key + callback token for Supabase"
@@ -71,6 +77,8 @@ aws: "AWS — us-east-1; heavy path only" {
   style: {fill: "#f9f1e3"; stroke: "#c17d1a"}
   ec2: Ephemeral EC2 {
     class: box
+    open: Open EC2 instances
+    config: Open launch template
     launch: launch template cmx-noop-baked-base
     profile: cannamatrix-genotype-runner
     runtime: /opt/cmx/noop_baked/science.py
@@ -79,12 +87,14 @@ aws: "AWS — us-east-1; heavy path only" {
   }
   ssm: AWS Systems Manager {
     class: box
+    open: Open SSM commands
     does: "receives runner command; exposes invocation status"
     location: AWS console → Systems Manager → Run Command
     caller: .github/workflows/noop-baked.yml
   }
   s3: Tenant S3 bucket {
     class: box
+    open: Open S3 outputs
     bucket: "cmx-tenant-<org_slug>-<account_id>"
     prefix: "genotype-results/<job_id>/"
     objects: result.json + result.json.meta
@@ -97,11 +107,13 @@ supabase: Supabase {
   style: {fill: "#e8f3ef"; stroke: "#35806f"}
   auth: Supabase Auth {
     class: box
+    open: Open Supabase Auth
     does: password authentication + user sessions
     location: "Supabase service; called from login page"
   }
   db: Postgres + REST/RPC API {
     class: box
+    open: Open Supabase
     holds: "jobs + job_artifacts; organization-scoped reads"
     user: queued job INSERT + mint under caller's org
     machine: record_job_started → insert_job_artifact → record_job_finished
